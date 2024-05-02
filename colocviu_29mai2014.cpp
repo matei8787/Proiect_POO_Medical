@@ -350,10 +350,58 @@ public:
     string get_nume();
     string get_unitate();
     float calculeaza_intensitatea();
-    friend istream& operator>> (istream& in, Substanta& s);
-    friend ostream& operator<< (ostream& out, const Substanta& s);
+    void afiseaza(ostream& out);
+    void citeste(istream& in);
 };
 
+void Substanta::set_nume(string nume)
+{
+    this -> nume = nume;
+}
+void Substanta::set_unitate(string unitate)
+{
+    this -> unitate = unitate;
+}
+void Substanta::set_cantitate(float c)
+{
+    this -> cantitate = c;
+}
+void Substanta::set_expirare(Data d)
+{
+    this -> expirare = d;
+}
+void Substanta::set_indice(float idx)
+{
+    this -> indice_intensitate = idx;
+}
+void Substanta::set_pret(float p)
+{
+    this -> pret = p;
+}
+string Substanta::get_nume()
+{
+    return this -> nume;
+}
+string Substanta::get_unitate()
+{
+    return this -> unitate;
+}
+float Substanta::get_cantitate()
+{
+    return this -> cantitate;
+}
+Data Substanta::get_expirare()
+{
+    return this -> expirare;
+}
+float Substanta::get_indice()
+{
+    return this -> indice_intensitate;
+}
+float Substanta::get_pret()
+{
+    return this -> pret;
+}
 float Substanta::calculeaza_intensitatea()
 {
     time_t t;
@@ -372,6 +420,14 @@ float Substanta::calculeaza_intensitatea()
         return 0;
     return (expirare.nrzile()-azi.nrzile())*indice_intensitate*cantitate;
 }
+void Substanta::afiseaza(ostream& out)
+{
+    out<<nume<<" "<<cantitate<<unitate<<"\nPret: "<<this -> get_pret()<<" RON\nData expirare: "<<expirare;
+}
+void Substanta::citeste(istream& in)
+{
+    in>>this -> nume>>this -> cantitate>>this -> unitate>>this -> indice_intensitate>>this -> pret>>this -> expirare;
+}
 
 class SubstantaIeftina: public Substanta
 {
@@ -382,12 +438,30 @@ public:
     SubstantaIeftina(string n, string u, float c, float i, float pr, Data d, float p): Substanta(n, u, c, i, pr, d), proc_impuritati(p){}
     void set_proc(float p);
     float get_proc();
-    float get_pret(); ///0,75 * pretul normal
+    float get_pret();
     float calculeaza_intensitatea();
+    void citeste(istream& in);
 };
+void SubstantaIeftina::set_proc(float p)
+{
+    this -> proc_impuritati = p;
+}
+float SubstantaIeftina::get_proc()
+{
+    return this -> proc_impuritati;
+}
+float SubstantaIeftina::get_pret()
+{
+    return Substanta::get_pret()*0.75;
+}
 float SubstantaIeftina::calculeaza_intensitatea()
 {
     return Substanta::calculeaza_intensitatea() * (1 - proc_impuritati);
+}
+void SubstantaIeftina::citeste(istream& in)
+{
+    Substanta::citeste(in);
+    in>>proc_impuritati;
 }
 
 class Substanta_onsale : public Substanta
@@ -398,18 +472,49 @@ public:
     Substanta_onsale(Substanta& s, float r): Substanta(s), reducere(r){}
     Substanta_onsale(string n, string u, float c, float i, float pr, Data d, float r): Substanta(n, u, c, i, pr, d), reducere(r){}
     float get_pret();
-    void set_reducere();
+    void set_reducere(float r);
     float get_reducere();
+    void citeste(istream& in);
 };
+float Substanta_onsale::get_pret()
+{
+    return Substanta::get_pret()*reducere;
+}
+void Substanta_onsale::set_reducere(float r)
+{
+    this -> reducere = r;
+}
+float Substanta_onsale::get_reducere()
+{
+    return this -> reducere;
+}
+void Substanta_onsale::citeste(istream& in)
+{
+    Substanta::citeste(in);
+    in>>reducere;
+}
 
-class SubstantaIeftina_onsale : public SubstantaIeftina, public Substanta_onsale
+
+class SubstantaIeftina_onsale : virtual public SubstantaIeftina, virtual public Substanta_onsale
 {
 public:
     SubstantaIeftina_onsale(){}
     SubstantaIeftina_onsale(SubstantaIeftina& s1, Substanta_onsale& s2):SubstantaIeftina(s1), Substanta_onsale(s2){}
     SubstantaIeftina_onsale(string n, string u, float c, float i, float pr, Data d, float r, float p):SubstantaIeftina(n, u, c, i, pr, d, p), Substanta_onsale(n, u, c, i, p, d, r){}
     float get_pret();
+    void citeste(istream& in);
 };
+float SubstantaIeftina_onsale::get_pret()
+{
+    return Substanta_onsale::get_pret()*0.75;
+}
+void SubstantaIeftina_onsale::citeste(istream& in)
+{
+    SubstantaIeftina::citeste(in);
+    int aux;
+    in>>aux;
+    Substanta_onsale::set_reducere(aux);
+}
 
 class Medicament
 {
@@ -427,29 +532,294 @@ public:
     string get_nume();
     Substanta* get_substanta(int i);
     Substanta* get_substanta(string nume);
+    void afiseaza(ostream& out);
+    void citeste(istream& in);
 };
-
-
-
+void Medicament::set_nume(string nume)
+{
+    this -> nume = nume;
+}
+void Medicament::adauga_substanta(Substanta s)
+{
+    substante.push_back(&s);
+}
+void Medicament::sterge_substanta(int i)
+{
+    substante.erase(substante.begin() + i);
+}
+void Medicament::sterge_substanta(string nume)
+{
+    for ( int i = 0 ; i < substante.size() ; i++ )
+    {
+        if ( substante[i] -> get_nume() == nume )
+        {
+            substante.erase(substante.begin() + i);
+            return;
+        }
+    }
+}
+string Medicament::get_nume()
+{
+    return this -> nume;
+}
+float Medicament::get_pret()
+{
+    float ans = 0;
+    for ( Substanta* s : substante )
+    {
+        ans += s -> get_pret();
+    }
+    return ans;
+}
+float Medicament::get_intensitate_totala()
+{
+    float ans = 0;
+    for( Substanta* s : substante )
+    {
+        ans += s -> calculeaza_intensitatea();
+    }
+    return ans;
+}
+Substanta* Medicament::get_substanta(int i)
+{
+    return substante[i];
+}
+Substanta* Medicament::get_substanta(string nume)
+{
+    for ( Substanta* s : substante )
+    {
+        if ( s -> get_nume() == nume )
+            return s;
+    }
+    return nullptr;
+}
+void Medicament::afiseaza(ostream& out)
+{
+    out<<this -> nume<<":\n";
+    for ( Substanta* s : substante )
+    {
+        s -> afiseaza(out);
+        out<<'\n';
+    }
+}
+void Medicament::citeste(istream& in)
+{
+    int nr_substante;
+    in>>nume;
+    in>>nr_substante;
+    for ( int i = 1 ; i <= nr_substante ; i++ )
+    {
+        int tip; ///0=normal, 1=ieftin, 2=onsale, 3=ambele
+        in>>tip;
+        Substanta* s;
+        if ( tip == 1 )
+        {
+            SubstantaIeftina su;
+            su.citeste(in);
+            s = &su;
+            
+        }
+        else if ( tip == 2 )
+        {
+            Substanta_onsale su;
+            su.citeste(in);
+            s = &su;
+        }
+        else if ( tip == 3 )
+        {
+            SubstantaIeftina_onsale su;
+            su.citeste(in);
+            Substanta_onsale* aux = &su; ///duamne ajuta
+            s = aux;
+        }
+        else
+        {
+            s -> citeste(in);
+        }
+        substante.push_back(s);
+    }
+}
 class Fisa
 {
     vector<Medicament*> tratament_activ;
     vector< Test_analiza<int, float>* > analize_numerice; ///care verifica o valoare si il pune intr-un bucket
     vector< Test_analiza<bool, bool>* > analize_booleene; ///care verifica daca este sau nu cumva
 public:
+    Fisa(){}
+    Fisa(vector<Medicament*>& v, vector<Test_analiza<int, float>*>& an, vector<Test_analiza<bool, bool>*>& ab): tratament_activ(v), analize_numerice(an), analize_booleene(ab){}
     void adauga_medicament(Medicament* m);
     void adauga_numeric(Test_analiza<int, float>* t);
     void adauga_boolean(Test_analiza<bool, bool>* t);
-    void sterge_medicament(Medicament* m);
+    void sterge_medicament(string nume);
     void sterge_medicament(int i);
-    void sterge_numeric(Test_analiza<int, float>* t);
+    void sterge_numeric(string nume_sub);
     void sterge_numeric(int i);
-    void sterge_boolean(Test_analiza<bool, bool>* t);
+    void sterge_boolean(string nuem_sub);
     void sterge_boolean(int i);
-    friend ostream& operator<< (ostream& out, const Fisa& f);
-    friend istream& operator>> (istream& in, Fisa& f);
+    Medicament* get_medicament(int i);
+    Medicament* get_medicament(string nume);
+    Test_analiza<int, float>* get_analiza_numerica(int i);
+    Test_analiza<int, float>* get_analiza_numerica(string nume_substanta);
+    Test_analiza<bool, bool>* get_analiza_booleana(int i);
+    Test_analiza<bool, bool>* get_analiza_booleana(string nume_substanta);
+    void citeste_tratament_activ(istream& in);
+    void citeste_analize_numerice(istream& in);
+    void citeste_analize_booleene(istream& in);
+    void afiseaza_analize_numerice(ostream& out);
+    void afiseaza_analize_booleene(ostream& out);
+    void afiseaza_tratament_activ(ostream& out);
 };
+void Fisa::adauga_medicament(Medicament* m)
+{
+    this -> tratament_activ.push_back(m);
+}
+void Fisa::adauga_numeric(Test_analiza<int, float>* t)
+{
+    this -> analize_numerice.push_back(t);
+}
+void Fisa::adauga_boolean(Test_analiza<bool, bool>* t)
+{
+    this -> analize_booleene.push_back(t);
+}
+void Fisa::sterge_medicament(string nume)
+{
+    for ( int i = 0 ; i < tratament_activ.size() ; i++ )
+    {
+        if ( tratament_activ[i] -> get_nume() == nume )
+        {
+            tratament_activ.erase(tratament_activ.begin() + i);
+            return;
+        }
+    }
+}
+void Fisa::sterge_medicament(int i)
+{
+    tratament_activ.erase(tratament_activ.begin() + i);
+}
+void Fisa::sterge_numeric(string nume)
+{
+    for ( int i = 0 ; i < analize_numerice.size() ; i++ )
+    {
+        if ( analize_numerice[i]->get_substanta() == nume )
+        {
+            analize_numerice.erase(analize_numerice.begin() + i);
+            return;
+        }
+    }
+}
+void Fisa::sterge_numeric(int i)
+{
+    analize_numerice.erase(analize_numerice.begin() + i);
+}
+void Fisa::sterge_boolean(string nume)
+{
+    for ( int i = 0 ; i < analize_booleene.size() ; i++ )
+    {
+        if ( analize_booleene[i]->get_substanta() == nume )
+        {
+            analize_booleene.erase(analize_booleene.begin() + i);
+            return;
+        }
+    }
+}
+void Fisa::sterge_boolean(int i)
+{
+    analize_booleene.erase(analize_booleene.begin() + i);
+}
+Medicament* Fisa::get_medicament(string nume)
+{
+    for ( Medicament* m : tratament_activ )
+    {
+        if ( m -> get_nume() == nume )
+            return m;
+    }
+    return nullptr;
+}
+Medicament* Fisa::get_medicament(int i)
+{
+    return tratament_activ[i];
+}
+Test_analiza<int, float>* Fisa::get_analiza_numerica(string nume)
+{
+    for ( Test_analiza<int, float>* t : analize_numerice )
+    {
+        if ( t -> get_substanta() == nume )
+            return t;
+    }
+    return nullptr;
+}
+Test_analiza<int, float>* Fisa::get_analiza_numerica(int i)
+{
+    return analize_numerice[i];
+}
+Test_analiza<bool, bool>* Fisa::get_analiza_booleana(string nume)
+{
+    for ( Test_analiza<bool, bool>* t : analize_booleene )
+    {
+        if ( t -> get_substanta() == nume )
+            return t;
+    }
+    return nullptr;
+}
+Test_analiza<bool, bool>* Fisa::get_analiza_booleana(int i)
+{
+    return analize_booleene[i];
+}
+void Fisa::citeste_tratament_activ(istream& in)
+{
+    int n;///nr_medicamente
+    in>>n;
+    for ( int i = 1 ; i <= n ; i++ )
+    {
+        Medicament aux;
+        aux.citeste(in);
+        tratament_activ.push_back(&aux);
+    }
+}
+void Fisa::citeste_analize_numerice(istream& in)
+{
+    int n; ///nr analize
+    in>>n;
+    for ( int i = 1 ; i <= n ; i++ )
+    {
+        Test_analiza<int, float> t;
+        t.citeste(in);
+        analize_numerice.push_back(&t);
+    }
+}
+void Fisa::citeste_analize_booleene(istream& in)
+{
+    int n;
+    in>>n;
+    for ( int i = 1 ; i <= n ; i++ )
+    {
+        Test_analiza<bool, bool> t;
+        t.citeste(in);
+        analize_booleene.push_back(&t);
+    }
+}
 
+void Fisa::afiseaza_analize_booleene(ostream& out)
+{
+    for ( Test_analiza<bool, bool>* t : analize_booleene )
+    {
+        t -> afiseaza(out);
+    }
+}
+void Fisa::afiseaza_analize_numerice(ostream& out)
+{
+    for ( Test_analiza<int, float>* t: analize_numerice )
+    {
+        t -> afiseaza(out);
+    }
+}
+void Fisa::afiseaza_tratament_activ(ostream& out)
+{
+    for ( Medicament* m : tratament_activ )
+    {
+        m -> afiseaza(out);
+    }
+}
 class Fisa_Copil : public Fisa
 {
     pair<Date_om*, Date_om*> parinti;
