@@ -4,6 +4,8 @@
         "functional": "cpp",
         "iosfwd": "cpp",
         "map": "cpp",
-        "vector": "cpp"
+        "vector": "cpp",
+        "format": "cpp",
+        "list": "cpp"
     }
 }
