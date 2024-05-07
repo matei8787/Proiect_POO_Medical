@@ -8,6 +8,7 @@
 #include <list>
 #include <chrono>
 #include <ctime>
+#include <cstdarg>
 using namespace std;
 
 class Date_om
@@ -177,20 +178,35 @@ class Restrictie
     function<T(U)> restrictie;
     map<T, string> denumiri; ///gen 0 = optim, 1 = normal, 2 = crescut     (sau)
                              ///0 = nefumator, 1 = fumator
+    vector<T> evaluari_normale;
 public:
     Restrictie(){}
-    Restrictie(function<T(U)>& f, map<T, string>& denumiri):restrictie(f), denumiri(denumiri){}
+    Restrictie(function<T(U)>& f, map<T, string>& denumiri, vector<T>& evals):restrictie(f), denumiri(denumiri), evaluari_normale(evals){}
     void set_restrictie(function<T(U)>& f);
     void set_denumiri(map<T, string>& m);
+    void set_normale(vector<T>& evals);
+    void adauga_normal(T normal);
     map<T, string>& get_denumiri();
     function<T(U)>& get_restrictie();
-
+    vector<T>& get_normale();
+    bool e_normal(U prop);
     string evalueaza(U prop);
 };
 template<typename T, typename U>
 void Restrictie<T, U>::set_restrictie(function<T(U)>& f)
 {
     this -> restrictie = f;
+}
+template<typename T, typename U>
+bool Restrictie<T, U>::e_normal(U prop)
+{
+    T eval = restrictie(prop);
+    for ( T e : evaluari_normale )
+    {
+        if ( e == eval )
+            return true;
+    }
+    return false;
 }
 template<typename T, typename U>
 void Restrictie<T, U>::set_denumiri(map<T, string>& m)
@@ -212,7 +228,21 @@ string Restrictie<T, U>::evalueaza(U prop)
 {
     return denumiri[restrictie(prop)];
 }
-
+template<typename T, typename U>
+void Restrictie<T,U>::set_normale(vector<T>& v)
+{
+    this -> evaluari_normale = v;
+}
+template<typename T, typename U>
+void Restrictie<T, U>::adauga_normal(T normal)
+{
+    this -> evaluari_normale.push_back(normal);
+}
+template<typename T, typename U>
+vector<T>& Restrictie<T, U>::get_normale()
+{
+    return this -> evaluari_normale;
+}
 template<typename T, typename U>
 class Test_analiza
 {
@@ -224,15 +254,14 @@ public:
     Test_analiza(){}
     Test_analiza(string s, string u, U i, Data& d, Restrictie<T, U> r): substanta(s), unitate(u), indicator(i), d(d), restrictia(r){}
     Test_analiza(string s, string u, U i, int zi, int luna, int an, char sep, Restrictie<T, U> r): substanta(s), unitate(u), indicator(i), d(zi, luna, an, sep), restrictia(r){}
-    Test_analiza(string s, string u, U i, Data& d, function<T(U)> &f, map<T, string>& m): substanta(s), unitate(u), indicator(i), d(d), restrictia(f, m){}
-    Test_analiza(string s, string u, U i, int zi, int luna, int an, char sep, function<T(U)> &f, map<T, string>& m): substanta(s), unitate(u), indicator(i), d(zi, luna, an, sep), restrictia(f, m){}
+    Test_analiza(string s, string u, U i, Data& d, function<T(U)> &f, map<T, string>& m, vector<T>& evals): substanta(s), unitate(u), indicator(i), d(d), restrictia(f, m, evals){}
+    Test_analiza(string s, string u, U i, int zi, int luna, int an, char sep, function<T(U)> &f, map<T, string>& m, vector<T>& evals): substanta(s), unitate(u), indicator(i), d(zi, luna, an, sep), restrictia(f, m, evals){}
     void set_substanta(string s);
     void set_indicator(U i);
     void set_data(Data& d);
     void set_data(int zi, int luna, int an, char sep);
     void set_unitate(string u);
     void set_restrictia(Restrictie<T, U>& r);
-    void set_restrictia(function<T(U)>& f, map<T, string>& m);
     string get_substanta();
     string get_unitate();
     U get_indicator();
@@ -296,12 +325,6 @@ void Test_analiza<T, U>::set_restrictia(Restrictie<T, U>& r)
     this -> restrictia = r;
 }
 template<typename T, typename U>
-void Test_analiza<T, U>::set_restrictia(function<T(U)>&f, map<T, string>& m)
-{
-    this -> restrictia.set_denumiri(m);
-    this -> restrictia.set_restrictie(f);
-}
-template<typename T, typename U>
 Restrictie<T, U>& Test_analiza<T, U>::get_restrictia()
 {
     return restrictia;
@@ -319,7 +342,8 @@ void Test_analiza<T, U>::afiseaza(ostream& out)
 template<typename T, typename U>
 void Test_analiza<T, U>::citeste(istream& in)
 {
-    in>>this -> substanta>>this -> indicator>>this -> d;
+    in>>this -> substanta>>this -> indicator>>this -> d>>this -> unitate;
+
 }
 
 ///de implementat de aici
@@ -840,7 +864,7 @@ class Restrictie_Pacient : public Restrictie<T, U>
 public:
     Restrictie_Pacient(){}
     Restrictie_Pacient(Restrictie<T, U>& r, string nume, U prop): Restrictie<T, U>(r), nume(nume), evaluare(prop){}
-    Restrictie_Pacient(function<T(U)>& f, map<T, string>& m, string nume, U prop): Restrictie<T, U>(f, m), nume(nume), evaluare(prop){}
+    Restrictie_Pacient(function<T(U)>& f, map<T, string>& m, vector<T>& eval, string nume, U prop): Restrictie<T, U>(f, m, eval), nume(nume), evaluare(prop){}
     void set_nume(string nume);
     void set_eval(U eval);
     U get_eval();
@@ -893,8 +917,8 @@ protected:
     Date_om date;
 public:
     Pacient(){}
-    Pacient(Date_om d, Fisa* f, vector< Restrictie_Pacient<int, float>* > & pn, vector< Restrictie_Pacient<bool, float>* >& pbm, vector< Restrictie_Pacient<bool, bool>* >& pb): date(d), f(f), prop_numerice(pn), prop_booleene_masurabile(pbm), prop_booleene(pb){}
-    Pacient(string n, string p, string ad, int a, Fisa* f, vector< Restrictie_Pacient<int, float>* > & pn, vector< Restrictie_Pacient<bool, float>* >& pbm, vector< Restrictie_Pacient<bool, bool>* >& pb): date(n, p, ad, a), f(f), prop_numerice(pn), prop_booleene_masurabile(pbm), prop_booleene(pb){}
+    Pacient(Date_om d, Fisa* f, vector< Restrictie_Pacient<int, float>* > & pn, vector< Restrictie_Pacient<bool, float>* >& pbm, vector< Restrictie_Pacient<bool, bool>* >& pb);
+    Pacient(string n, string p, string ad, int a, Fisa* f, vector< Restrictie_Pacient<int, float>* > & pn, vector< Restrictie_Pacient<bool, float>* >& pbm, vector< Restrictie_Pacient<bool, bool>* >& pb);
     /// imi cer scuze pentru ce am facut mai sus
     /// promit ca nu mi-am dat seama ca se rezolva usor problema cand am mai multi parametrii de tipuri mai de baza decat prea tarziu
     /// aia e, csf, ncsf
@@ -920,10 +944,50 @@ public:
     Restrictie_Pacient<bool, bool>* get_prop_booleana(string nume);
     Date_om get_date();
     Fisa* get_fisa();
+    int get_cate_naspa();
     bool operator==(const Pacient& p) const;
     friend istream& operator>>(istream& in, Pacient& p);
     friend ostream& operator<<(ostream& out, const Pacient& p);
 };
+int Pacient::get_cate_naspa()
+{
+    int cate_naspa=0;
+    for ( Restrictie_Pacient<int, float>* r : prop_numerice )
+    {
+        if ( !(r->e_normal(r->get_eval())) )
+            cate_naspa++;
+    }
+    for ( Restrictie_Pacient<bool, float>* r : prop_booleene_masurabile )
+    {
+        if ( !(r->e_normal(r->get_eval())))
+            cate_naspa++;
+    }
+    for ( Restrictie_Pacient<bool, bool>* r : prop_booleene )
+    {
+        if ( !(r->e_normal(r->get_eval())))
+            cate_naspa++;
+    }
+    for ( Test_analiza<int, float>* t : f -> get_analize_numerice() )
+    {
+        if ( !(t->get_restrictia().e_normal(t->get_indicator())) )
+        {
+            cate_naspa++;
+        }
+    }
+    for ( Test_analiza<bool, float>* t : f -> get_analize_booleene() )
+    {
+        if ( !(t->get_restrictia().e_normal(t->get_indicator())))
+        {
+            cate_naspa++;
+        }
+    }
+    return cate_naspa;
+}
+Pacient::Pacient(string n, string p, string ad, int a, Fisa* f, vector< Restrictie_Pacient<int, float>* > & pn, vector< Restrictie_Pacient<bool, float>* >& pbm, vector< Restrictie_Pacient<bool, bool>* >& pb): date(n, p, ad, a), f(f), prop_numerice(pn), prop_booleene_masurabile(pbm), prop_booleene(pb){}
+
+Pacient::Pacient(Date_om d, Fisa* f, vector< Restrictie_Pacient<int, float>* > & pn, vector< Restrictie_Pacient<bool, float>* >& pbm, vector< Restrictie_Pacient<bool, bool>* >& pb): date(d), f(f), prop_numerice(pn), prop_booleene_masurabile(pbm), prop_booleene(pb)
+{
+}
 void Pacient::set_date(Date_om d)
 {
     this -> date = d;
@@ -1082,6 +1146,8 @@ bool Pacient::operator==(const Pacient& p) const
 istream& operator>>(istream& in, Pacient& p)
 {
     in>>p.date;
+    if ( p.f == NULL )
+        p.f = new Fisa();
     p.f->citeste_analize_numerice(in);
     p.f->citeste_analize_booleene(in);
     p.f->citeste_tratament_activ(in);
@@ -1140,7 +1206,7 @@ class Adult : public Pacient
 public:
     Adult(){}
     Adult(Pacient& eu, vector<Pacient*>& copiii): Pacient(eu), copii(copiii){}
-    Adult(Pacient& eu, Pacient* copil): Pacient(eu){ copii.push_back(copil); }
+    Adult(Pacient& eu, Pacient* copil);
     void adauga_copil(Pacient* copil);
     void sterge_copil(Pacient* copil);
     void sterge_copil(int i);
@@ -1149,6 +1215,10 @@ public:
     friend istream& operator>>(istream& in, Adult& p);
     friend ostream& operator<<(ostream& out, const Adult& p);
 };
+Adult::Adult(Pacient& eu, Pacient* copil): Pacient(eu)
+{
+    copii.push_back(copil);
+}
 void Adult::adauga_copil(Pacient* p)
 {
     copii.push_back(p);
@@ -1201,7 +1271,7 @@ istream& operator>>(istream& in, Adult& a)
 }
 ostream& operator<<(ostream& out, const Adult& a)
 {
-    Pacient aux = a;
+    const Pacient* aux = &a;
     out<<aux<<'\n';
     out<<"Cu "<<a.copii.size()<<" copii\n";
     for ( int i = 0 ; i < a.copii.size() ; i++ )
@@ -1215,15 +1285,99 @@ class Adult_peste40 : public Adult
 {
 
 public:
-
+    Adult_peste40(){}
+    Adult_peste40(Adult& a, bool fumator, float sedentarism);
 };
+Adult_peste40::Adult_peste40(Adult& a, bool fumator, float sedentarism): Adult(a)
+{
+    function<bool(bool)> ffum = [](bool x){ return x; };
+    map<bool, string> mpfum = {{false, "Nefumator"}, {true, "Fumator"}};
+    function<int(float)> fsed = [](float nr){
+        if ( (float)(nr - ((int)nr)) >= 0.5 )
+            return (int)nr + 1;
+        return (int)nr;
+     };
+    map<int, string> mpsed = {{0, "Scazut"}, {1, "Mediu"}, {2, "Ridicat"}};
+    vector<bool> normal_fum = {false};
+    vector<int> normal_sed = {0, 1};
+    Restrictie_Pacient<bool, bool> fumatul(ffum, mpfum, normal_fum, "E Fumator", fumator);
+    Restrictie_Pacient<int, float> sedentar(fsed, mpsed, normal_sed, "Nivel Sedentr", sedentarism);
+    this -> adauga_prop_numerica(&sedentar);
+    this -> adauga_prop_booleana(&fumatul);
+}
 
 class Copil : public Pacient
 {
     pair<Adult*, Adult*> parinti;
 public:
-
+    Copil(){}
+    Copil(Pacient& eu, Adult* a1, Adult* a2): Pacient(eu), parinti(a1, a2){}
+    int get_cate_naspa();
+    pair<Adult*, Adult*>& get_parinti();
 };
+int Copil::get_cate_naspa()
+{
+    int ans = Pacient::get_cate_naspa();
+    Adult* a = this -> parinti.first, *b = this -> parinti.second;
+    Restrictie_Pacient<int, float>* risc_a1 = a -> get_prop_numerica("Risc Cardiovascular"), *risc_a2 = b -> get_prop_numerica("Risc Cardiovascular");
+    if ( !(risc_a1 -> e_normal(risc_a1 -> get_eval())) || !(risc_a2 -> e_normal(risc_a2 -> get_eval())))
+        return ans + 1;
+    return ans;
+}
+
+pair<Adult*, Adult*>& Copil::get_parinti()
+{
+    return this -> parinti;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template<typename T, typename U>
+class Afisare_Abstracta
+{
+    string nume;
+    function<T(U*)> crt;
+    map< T, vector<U*> > afisati;
+public:
+    
+};
+
 
 template<typename T>
 class Afisare
@@ -1232,38 +1386,269 @@ class Afisare
     function<T(Pacient*)> criteriu;
 public:
     Afisare(){}
-    Afisare(string nume, function<T(Pacient*)>& f): nume(nume), criteriu(f){}
-    virtual void creeaza(function<T(Pacient*)>& f) = 0;
-    virtual void afiseaza() = 0;
+    Afisare(string nume, function<T(Pacient*)>& f, vector<Pacient*>& total): nume(nume), criteriu(f){ creeaza(f, total); }
+    virtual void creeaza(function<T(Pacient*)>& f, vector<Pacient*>& total) = 0;
     void set_nume(string nume);
     string get_nume();
+    function<T(Pacient*)>& get_criteriu();
 };
-
+template<typename T>
+void Afisare<T>::set_nume(string nume)
+{
+    this -> nume = nume;
+}
+template<typename T>
+string Afisare<T>::get_nume()
+{
+    return this -> nume;
+}
+template<typename T>
+function<T(Pacient*)>& Afisare<T>::get_criteriu()
+{
+    return this -> criteriu;
+}
 class Afisare_Simpla : public Afisare<bool>
 {
     vector<Pacient*> pacienti;
 public:
     Afisare_Simpla(){}
-    Afisare_Simpla(string nume, function<bool(Pacient*)>& f): Afisare<bool>(nume, f){ creeaza(f); }
-    void creeaza(function<bool(Pacient*)>& f) override;
-    void afiseaza() override;
+    Afisare_Simpla(string nume, function<bool(Pacient*)>& f, vector<Pacient*>& total): Afisare<bool>(nume, f, total){}
+    void creeaza(function<bool(Pacient*)>& f, vector<Pacient*>& total) override;
+    void afiseaza(ostream& out);
 };
+void Afisare_Simpla::creeaza(function<bool(Pacient*)>& f, vector<Pacient*>& total)
+{
+    for ( int i = 0 ; i < total.size() ; i++ )
+    {
+        if ( f(total[i]) )
+        {
+            pacienti.push_back(total[i]);
+        }
+    }
+}
+void Afisare_Simpla::afiseaza(ostream& out)
+{
+    for ( Pacient* p : pacienti )
+    {
+        out<<(*p)<<'\n';
+    }
+}
+
 
 template<typename T>
 class Afisare_Selectiva : public Afisare<T>
 {
-    map<T, Pacient*> pacienti;
+    map<T, vector<Pacient*> > pacienti;
 public:
     Afisare_Selectiva(){}
-    Afisare_Selectiva(string nume, function<T(Pacient*)>& f): Afisare<T>(nume, f){ creeaza(f); }
-    void creeaza(function<T(Pacient*)>& f) override;
-    void afiseaza(T selectare);
+    Afisare_Selectiva(string nume, function<T(Pacient*)>& f, vector<Pacient*>& total): Afisare<T>(nume, f, total){}
+    void creeaza(function<T(Pacient*)>& f, vector<Pacient*>& total) override;
+    void afiseaza(ostream& out, istream& in);
 };
-
-
+template<typename T>
+void Afisare_Selectiva<T>::creeaza(function<T(Pacient*)>& f, vector<Pacient*>& total)
+{
+    for ( int i = 0 ; i < total.size() ; i++ )
+    {
+        T aux = f(total[i]);
+        if ( pacienti.find(aux) == pacienti.end() )
+        {
+            vector<Pacient*> vaux;
+            vaux.push_back(total[i]);
+            pacienti.insert(make_pair(aux, vaux));
+        }
+        else
+        {
+            pacienti[aux].push_back(total[i]);
+        }
+    }
+}
+template<typename T>
+void Afisare_Selectiva<T>::afiseaza(ostream& out, istream& in)
+{
+    T selectare;
+    out<<"Selecteaza "<<this -> get_nume()<<": ";
+    in>>selectare;
+    for ( Pacient* p : pacienti[selectare] )
+    {
+        out<<(*p)<<'\n';
+    }
+}
+namespace util
+{
+    ///acum imi dau seama ca pot face asta
+    template<typename T, typename U>
+    void sterge_din_vector(vector<T>& v, U x, function<bool(T, U)>& f)
+    {
+        for ( int i = 0 ; i < v.size() ; i++ )
+        {
+            if ( f(v[i], x) )
+            {
+                v.erase(v.begin() + i);
+                return;
+            }
+        }
+    }
+}
+class Baza_De_Date
+{
+    vector<Pacient*> pacienti;
+    vector<Medicament*> medicamente;
+    vector<Afisare_Simpla*> afisari_simple;
+    vector<Afisare_Selectiva<string>*> afisari_selective;
+public:
+    Baza_De_Date(){}
+    Baza_De_Date(vector<Pacient*>& total): pacienti(total){}
+    Baza_De_Date(vector<Pacient*>& total, vector<Afisare_Simpla*>& as, vector<Afisare_Selectiva<string>*>& ass): pacienti(total), afisari_simple(as), afisari_selective(ass){}
+    void adauga_pacient(Pacient* p);
+    void adauga_af_simplu(Afisare_Simpla* as);
+    void adauga_af_select(Afisare_Selectiva<string>* ass);
+    void sterge_pacient(Pacient* p);
+    void sterge_pacient(Date_om date);
+    void sterge_pacient(string nume, string prenume);
+    void sterge_pacient(int i);
+    void sterge_simplu(Afisare_Simpla* as);
+    void sterge_simplu(string nume);
+    void sterge_simplu(int i);
+    void sterge_select(Afisare_Selectiva<string>* ass);
+    void sterge_select(string nume);
+    void sterge_select(int i);
+    vector<Pacient*>& get_pacienti();
+    vector<Afisare_Simpla*>& get_af_simplu();
+    vector<Afisare_Selectiva<string>*>& get_af_select();
+    void afiseaza_selectare(ostream& out, bool simpla, int care);
+    void panou_selectare();
+};
+void Baza_De_Date::adauga_pacient(Pacient* p)
+{
+    this -> pacienti.push_back(p);
+}
+void Baza_De_Date::adauga_af_simplu(Afisare_Simpla* as)
+{
+    this -> afisari_simple.push_back(as);
+}
+void Baza_De_Date::adauga_af_select(Afisare_Selectiva<string>* ass)
+{
+    this -> afisari_selective.push_back(ass);
+}
+void Baza_De_Date::sterge_pacient(Pacient* p)
+{
+    function<bool(Pacient*, Pacient*)> aux = [](Pacient* a, Pacient* b){ return a == b;};
+    util::sterge_din_vector<Pacient*, Pacient*>(pacienti, p, aux);
+}
+void Baza_De_Date::sterge_pacient(Date_om date)
+{
+    function<bool(Pacient*, Date_om)> aux = [](Pacient* a, Date_om b){ return a->get_date() == b;};
+    util::sterge_din_vector<Pacient*, Date_om>(pacienti, date, aux);
+}
+void Baza_De_Date::sterge_pacient(string nume, string prenume)
+{
+    function<bool(Pacient*, pair<string, string>)> aux = [](Pacient* a, pair<string, string> b){ return (a->get_date().get_nume() == b.first && a->get_date().get_prenume() == b.second); };
+    util::sterge_din_vector<Pacient*, pair<string, string> >(pacienti, make_pair(nume, prenume), aux);
+}
+void Baza_De_Date::sterge_pacient(int i)
+{
+    pacienti.erase(pacienti.begin() + i);
+}
+void Baza_De_Date::sterge_simplu(Afisare_Simpla* as)
+{
+    function<bool(Afisare_Simpla*, Afisare_Simpla*)> aux = [](Afisare_Simpla* a, Afisare_Simpla* b){ return a == b; };
+    util::sterge_din_vector<Afisare_Simpla*, Afisare_Simpla*>(afisari_simple, as, aux);
+}
+void Baza_De_Date::sterge_simplu(string nume)
+{
+    function<bool(Afisare_Simpla*, string)> aux = [](Afisare_Simpla* a, string b){ return a->get_nume() == b; };
+    util::sterge_din_vector<Afisare_Simpla*, string>(afisari_simple, nume, aux);
+}
+void Baza_De_Date::sterge_simplu(int i)
+{
+    afisari_simple.erase(afisari_simple.begin() + i);
+}
+void Baza_De_Date::sterge_select(Afisare_Selectiva<string>* ass)
+{
+    function<bool(Afisare_Selectiva<string>*, Afisare_Selectiva<string>*)> aux = [](Afisare_Selectiva<string>* a, Afisare_Selectiva<string>* b){ return a == b; };
+    util::sterge_din_vector<Afisare_Selectiva<string>*, Afisare_Selectiva<string>*>(afisari_selective, ass, aux);
+}
+void Baza_De_Date::sterge_select(string nume)
+{
+    function<bool(Afisare_Selectiva<string>*, string)> aux = [](Afisare_Selectiva<string>* a, string b){ return a->get_nume() == b; };
+    util::sterge_din_vector<Afisare_Selectiva<string>*, string>(afisari_selective, nume, aux);
+}
+void Baza_De_Date::sterge_select(int i)
+{
+    afisari_selective.erase(afisari_selective.begin() + i);
+}
+vector<Pacient*>& Baza_De_Date::get_pacienti()
+{
+    return this -> pacienti;
+}
+vector<Afisare_Simpla*>& Baza_De_Date::get_af_simplu()
+{
+    return this -> afisari_simple;
+}
+vector<Afisare_Selectiva<string>*>& Baza_De_Date::get_af_select()
+{
+    return this -> afisari_selective;
+}
+void Baza_De_Date::afiseaza_selectare(ostream& out, bool simpla, int care)
+{
+    if ( simpla )
+    {
+        afisari_simple[care]->afiseaza(out);
+    }
+    else
+    {
+        afisari_selective[care]->afiseaza(out, cin);
+    }
+}
+void Baza_De_Date::panou_selectare()
+{
+    int idx = 0;
+    cout<<"0) Afisare toti pacientii\n";
+    for ( int i = 0 ; i < afisari_simple.size() ; i++ )
+    {
+        idx++;
+        cout<<idx<<") "<<afisari_simple[i]->get_nume()<<'\n';
+    }
+    for ( int i = 0 ; i < afisari_selective.size() ; i++ )
+    {
+        idx++;
+        cout<<idx<<") "<<afisari_selective[i]->get_nume()<<'\n';
+    }
+    int nr;
+    cin>>nr;
+    if ( nr == 0 )
+    {
+        for ( Pacient* p : pacienti )
+        {
+            cout<<(*p)<<'\n';
+        }
+        return;
+    }
+    if ( nr <= afisari_simple.size() )
+    {
+        afisari_simple[nr-1]->afiseaza(cout);
+    }
+    else
+    {
+        nr -= afisari_simple.size();
+        afisari_selective[nr-1]->afiseaza(cout, cin);
+    }
+}
 class Program
 {
-
+    Baza_De_Date baza;
+public:
+    template<typename T, typename ...Types>
+    T* creeaza(Types ...args_constructor)
+    {
+        T ans(args_constructor...);
+        return &ans;
+    }
+    void incepe_baza_de_date()
+    {
+        
+    }
 };
 
 
@@ -1281,17 +1666,39 @@ bool efum(float x)
         return true;
     return false;
 }
+void Adauga_Risc_Cardiovascular(Pacient*& p)
+{
+    function<int(float)> fcardio = [](float cate_naspa){return (int)cate_naspa;};
+    map<int, string> mpcardio = {{0, "NU"}, {1, "Mediu"}, {2, "Crescut"}};
+    vector<int> normal = {0};
+    int aux = p -> get_cate_naspa();
+    Restrictie_Pacient<int, float> cardio(fcardio, mpcardio, normal, "Risc Cardiovascular", aux);
+    p->adauga_prop_numerica(&cardio);
+}
 ///Colesterol 250 25 5 2024
+///TODO Testare!!
 int main()
 {
     map<int, string> m = {{0, "Optim"}, {1, "Normal"}, {2, "Crescut"}};
-    map<bool, string> mp = {{false, "Nefumator"}, {true, "Fumator"}};
     function<int(float)> aux = cole;
-    function<bool(float)> plm = efum;
-    Test_analiza<int, float> colesterolul("Colesterol", "mg/dl", 250, 25, 5, 2024, '.', aux, m);
-    Test_analiza<bool, float> fumator("Fumatul", "mg/dl", 1, 25, 5, 2024, '.', plm, mp);
-    Medicament s;
-    s.citeste(cin);
-    s.afiseaza(cout);
+    vector<int> colesterol_normal = {0, 1};
+    Pacient *p1, *p2, *p3, pa1, pa2, pa3;
+    cin>>pa1;
+    cin>>pa2;
+    cin>>pa3;
+    p1 = &pa1;
+    p2 = &pa2;
+    p3 = &pa3;
+    vector<Pacient*> v = {p3};
+    Data x(1, 1, 2200, '.');
+    Test_analiza<int, float> t("Colesterol", "mg/dl", 250, x, Restrictie<int, float>(aux, m, colesterol_normal));
+    Adauga_Risc_Cardiovascular(p1);
+    Adauga_Risc_Cardiovascular(p2);
+    Adauga_Risc_Cardiovascular(p3);
+    Adult *a1=new Adult(pa1, v), *a2=new Adult(pa2, v);
+
+    a1->get_fisa()->adauga_numeric(&t);
+    Copil *c = new Copil(pa3, a1, a2);
+    cout<<c->get_prop_numerica("Risc Cardiovascular")->evalueaza();
     return 0;
 }
