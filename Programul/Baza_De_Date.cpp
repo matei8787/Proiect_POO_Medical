@@ -1,6 +1,23 @@
 #pragma once
 #include "./Baza_De_Date.hpp"
 
+namespace util
+{
+    ///acum imi dau seama ca pot face asta
+    template<typename T, typename U>
+    void sterge_din_vector(vector<T>& v, U x, function<bool(T, U)>& f)
+    {
+        for ( int i = 0 ; i < v.size() ; i++ )
+        {
+            if ( f(v[i], x) )
+            {
+                v.erase(v.begin() + i);
+                return;
+            }
+        }
+    }
+}
+
 Pacient* Baza_De_Date::get_pacient(string nume, string prenume)
 {
     for ( Pacient* p : pacienti_totali )
