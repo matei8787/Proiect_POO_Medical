@@ -6,3 +6,6 @@
 
 #fara json ca fac in c++
 *.json
+
+#fara .vscode
+.vscode
