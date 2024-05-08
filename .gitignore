@@ -1,8 +1,8 @@
 #fara txt
-.txt
+*.txt
 
 #fara exe
-.exe
+*.exe
 
 #fara json ca fac in c++
-.json
+*.json
