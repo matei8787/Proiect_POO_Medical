@@ -11,7 +11,7 @@ float SubstantaIeftina::get_proc()
 }
 float SubstantaIeftina::get_pret()
 {
-    return this -> get_pret()*0.75;
+    return this -> Substanta::get_pret()*0.75;
 }
 float SubstantaIeftina::calculeaza_intensitatea()
 {
@@ -25,4 +25,5 @@ void SubstantaIeftina::citeste(istream& in)
 void SubstantaIeftina::afiseaza(ostream& out)
 {
     afiseaza_substanta(out, this);
+    out<<"Am atatea impuritati: "<<proc_impuritati<<'\n';
 }

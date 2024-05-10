@@ -5,7 +5,6 @@
 class Program
 {
     static map<int, string> mpcardio;
-    vector<float> masoara;
     Baza_De_Date baza;
     vector<Data> date_random;
     Test_analiza<bool, float> tensiune_buna, tensiune_naspa, proteina_c_optim, proteina_c_naspa;

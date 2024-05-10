@@ -12,7 +12,7 @@ public:
     float get_proc();
     float get_pret();
     float calculeaza_intensitatea();
-    virtual void citeste(istream& in);
-    virtual void afiseaza(ostream& out);
+    void citeste(istream& in);
+    void afiseaza(ostream& out);
     virtual ~SubstantaIeftina(){}
 };
