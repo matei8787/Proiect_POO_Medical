@@ -16,7 +16,7 @@ class Restrictie
     function<T(U)> restrictie;
     map<T, string> denumiri; ///gen 0 = optim, 1 = normal, 2 = crescut     (sau)
                              ///0 = nefumator, 1 = fumator
-    vector<T> evaluari_normale;
+    vector<T> evaluari_normale; ///
 public:
     Restrictie(){}
     Restrictie(function<T(U)>& f, map<T, string>& denumiri, vector<T>& evals):restrictie(f), denumiri(denumiri), evaluari_normale(evals){}

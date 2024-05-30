@@ -10,9 +10,9 @@ public:
     SubstantaIeftina(string n, string u, float c, float i, float pr, Data d, float p): Substanta(n, u, c, i, pr, d), proc_impuritati(p){}
     void set_proc(float p);
     float get_proc();
-    float get_pret();
+    virtual float get_pret();
     float calculeaza_intensitatea();
-    void citeste(istream& in);
-    void afiseaza(ostream& out);
+    virtual void citeste(istream& in);
+    virtual void afiseaza(ostream& out);
     virtual ~SubstantaIeftina(){}
 };

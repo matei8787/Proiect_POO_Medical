@@ -10,6 +10,7 @@ class Substanta
 
 public:
     Substanta(){}
+    Substanta(Substanta*& s): nume(s->nume), unitate(s->unitate), cantitate(s->cantitate), indice_intensitate(s->indice_intensitate), pret(s->pret), expirare(s->expirare){}
     Substanta(string n, string u, float c, float i, float p, Data d): nume(n), unitate(u), cantitate(c), indice_intensitate(i), pret(p), expirare(d){}
     void set_nume(string nume);
     void set_unitate(string unitate);
@@ -17,7 +18,7 @@ public:
     void set_expirare(Data d);
     void set_indice(float i);
     void set_pret(float p);
-    float get_pret();
+    virtual float get_pret();
     float get_indice();
     Data get_expirare();
     float get_cantitate();

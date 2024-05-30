@@ -18,6 +18,7 @@ namespace util
     }
 }
 
+
 Pacient* Baza_De_Date::get_pacient(string nume, string prenume)
 {
     for ( Pacient* p : pacienti_totali )

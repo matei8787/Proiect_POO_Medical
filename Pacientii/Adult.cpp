@@ -55,6 +55,8 @@ istream& operator>>(istream& in, Adult& a)
     a = Adult(aux, v);
     return in;
 }
+
+
 ostream& operator<<(ostream& out, const Adult& a)
 {
     const Pacient* aux = &a;

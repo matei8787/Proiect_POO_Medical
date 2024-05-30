@@ -3,7 +3,7 @@
 /*template<typename T, typename U>
 function<T(U)> creeaza_functie_universala(vector<U>& trepte) ///prea multe structuri algebrice :))
 {
-    function<T(U)> f=[](U prop){
+    function<T(U)> f=[trepte](U prop){
         for ( int i = 0 ; i < trepte.size() ; i++ )
         {
             if ( prop > trepte[i] )

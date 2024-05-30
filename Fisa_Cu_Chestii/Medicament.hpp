@@ -10,11 +10,11 @@
 
 class Medicament
 {
-    vector<Substanta*> substante;
+    vector< shared_ptr<Substanta> > substante;
     string nume;
 public:
     Medicament(){}
-    Medicament(string nume, vector<Substanta*>& v): nume(nume), substante(v){}
+    Medicament(string nume, vector< shared_ptr<Substanta> >& v): nume(nume), substante(v){}
     void set_nume(string nume);
     void adauga_substanta(Substanta s);
     void sterge_substanta(string nume);

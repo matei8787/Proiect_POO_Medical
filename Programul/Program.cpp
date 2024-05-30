@@ -160,20 +160,20 @@ void Program::baga_medicamente_random(int nr)
         ifstream in(numf);
         in>>aux;
         Medicament* med = new Medicament(aux);
-        baza.adauga_medicament(med);
+        Baza_De_Date::get_instanta()->adauga_medicament(med);
     }
 }
 vector<Medicament*> Program::tratament_random(int cate)
 {
-    const int PAS = baza.get_medicamente().size() / cate;
+    const int PAS = Baza_De_Date::get_instanta()->get_medicamente().size() / cate;
     int i = 0, puse = 0, timer = rand()%PAS;
     vector<Medicament*> ans;
-    while ( i < baza.get_medicamente().size() && puse < cate )
+    while ( i < Baza_De_Date::get_instanta()->get_medicamente().size() && puse < cate )
     {
         if ( timer == 0 )
         {
             timer = rand() % PAS;
-            ans.push_back(baza.get_medicamente()[i]);
+            ans.push_back(Baza_De_Date::get_instanta()->get_medicamente()[i]);
             puse++;
         }
         i++;
@@ -202,7 +202,7 @@ void Program::creeaza_teste()
 }
 void Program::afis_medicamente(ostream& _out)
 {
-    for ( Medicament* m : baza.get_medicamente() )
+    for ( Medicament* m : Baza_De_Date::get_instanta()->get_medicamente() )
     {
         _out<<*m<<'\n';
     }
@@ -226,51 +226,52 @@ void Program::baga_ierarhia()
     Adult_peste40* a4 = new Adult_peste40(*(new Adult(*p4, p6)), false, 0); 
     Adult* a5 = new Adult(*p5, p7); 
     Adult* a6 = new Adult(*p6, p7); 
-    Copil* c1 = new Copil(*p7, a5, a6);
-    Copil* c2 = new Copil(*p8, a5, a6);
-    Copil* c3 = new Copil(*p9, a5, a6);
+    reference_wrapper<Adult*> aux = a6;
+    Copil* c1 = new Copil(*p7, a5, aux.get());
+    Copil* c2 = new Copil(*p8, a5, aux.get());
+    Copil* c3 = new Copil(*p9, a5, aux.get());
     a5 -> sterge_copil(p7);
-    a6 -> sterge_copil(p7);
+    aux.get() -> sterge_copil(p7);
     a5 -> adauga_copil(c1);
     a5 -> adauga_copil(c2);
     a5 -> adauga_copil(c3);
-    a6 -> adauga_copil(c1);
-    a6 -> adauga_copil(c2);
-    a6 -> adauga_copil(c3);
+    aux.get() -> adauga_copil(c1);
+    aux.get() -> adauga_copil(c2);
+    aux.get() -> adauga_copil(c3);
     Adauga_Risc_Cardiovascular(a1);
     Adauga_Risc_Cardiovascular(a2);
     Adauga_Risc_Cardiovascular(a3);
     Adauga_Risc_Cardiovascular(a4);
     Adauga_Risc_Cardiovascular(a5);
-    Adauga_Risc_Cardiovascular(a6);
+    Adauga_Risc_Cardiovascular(aux.get());
     Adauga_Risc_Cardiovascular(c1);
     Adauga_Risc_Cardiovascular(c2);
     Adauga_Risc_Cardiovascular(c3);
-    baza.adauga_pacient(a1);
-    baza.adauga_pacient(a2);
-    baza.adauga_pacient(a3);
-    baza.adauga_pacient(a4);
-    baza.adauga_pacient(a5);
-    baza.adauga_pacient(a6);
-    baza.adauga_pacient(c1);
-    baza.adauga_pacient(c2);
-    baza.adauga_pacient(c3);
+    Baza_De_Date::get_instanta()->adauga_pacient(a1);
+    Baza_De_Date::get_instanta()->adauga_pacient(a2);
+    Baza_De_Date::get_instanta()->adauga_pacient(a3);
+    Baza_De_Date::get_instanta()->adauga_pacient(a4);
+    Baza_De_Date::get_instanta()->adauga_pacient(a5);
+    Baza_De_Date::get_instanta()->adauga_pacient(aux.get());
+    Baza_De_Date::get_instanta()->adauga_pacient(c1);
+    Baza_De_Date::get_instanta()->adauga_pacient(c2);
+    Baza_De_Date::get_instanta()->adauga_pacient(c3);
 }
 void Program::baga_afisari()
 {
     function<bool(Pacient*)> f_mereu = f_pacient_mereu, f_a_ridicat = f_adult_risc_ridicat, f_c_risc = f_copil_risc;
     function<string(Pacient*)> f_familie = f_nume_familie;
     function<bool(Medicament*)> f = [](Medicament* ){return true;};
-    Afisare_Abstracta<bool, Medicament>* af_tot_med = new Afisare_Abstracta<bool, Medicament>("Toate Medicamentele", f, baza.get_medicamente());
-    Afisare_Abstracta<bool, Pacient>* af_tot = new Afisare_Abstracta<bool, Pacient>("Toti Pacientii", f_mereu, baza.get_pacienti());
-    Afisare_Abstracta<bool, Pacient>* af_a_ridicat = new Afisare_Abstracta<bool, Pacient>("Adulti cu factor de risc cardiovascular ridicat", f_a_ridicat, baza.get_pacienti());
-    Afisare_Abstracta<bool, Pacient>* af_c_risc = new Afisare_Abstracta<bool, Pacient>("Copiii cu factor de risc cardiovascular", f_c_risc, baza.get_pacienti());
-    Afisare_Abstracta<string, Pacient>* af_dupa_nume = new Afisare_Abstracta<string, Pacient>("Afisare dupa numele de familie", f_familie, baza.get_pacienti());
-    baza.adauga_afm_simplu(af_tot_med);
-    baza.adauga_afp_select(af_dupa_nume);
-    baza.adauga_afp_simplu(af_tot);
-    baza.adauga_afp_simplu(af_a_ridicat);
-    baza.adauga_afp_simplu(af_c_risc);
+    Afisare_Abstracta<bool, Medicament>* af_tot_med = new Afisare_Abstracta<bool, Medicament>("Toate Medicamentele", f, Baza_De_Date::get_instanta()->get_medicamente());
+    Afisare_Abstracta<bool, Pacient>* af_tot = new Afisare_Abstracta<bool, Pacient>("Toti Pacientii", f_mereu, Baza_De_Date::get_instanta()->get_pacienti());
+    Afisare_Abstracta<bool, Pacient>* af_a_ridicat = new Afisare_Abstracta<bool, Pacient>("Adulti cu factor de risc cardiovascular ridicat", f_a_ridicat, Baza_De_Date::get_instanta()->get_pacienti());
+    Afisare_Abstracta<bool, Pacient>* af_c_risc = new Afisare_Abstracta<bool, Pacient>("Copiii cu factor de risc cardiovascular", f_c_risc, Baza_De_Date::get_instanta()->get_pacienti());
+    Afisare_Abstracta<string, Pacient>* af_dupa_nume = new Afisare_Abstracta<string, Pacient>("Afisare dupa numele de familie", f_familie, Baza_De_Date::get_instanta()->get_pacienti());
+    Baza_De_Date::get_instanta()->adauga_afm_simplu(af_tot_med);
+    Baza_De_Date::get_instanta()->adauga_afp_select(af_dupa_nume);
+    Baza_De_Date::get_instanta()->adauga_afp_simplu(af_tot);
+    Baza_De_Date::get_instanta()->adauga_afp_simplu(af_a_ridicat);
+    Baza_De_Date::get_instanta()->adauga_afp_simplu(af_c_risc);
 }
 void Program::incepe_baza_de_date()
 {
@@ -284,51 +285,51 @@ void Program::af_medicamente()
 {
     cout<<"Ce vrei afisat?\n";
     int idx = 0;
-    for ( int i = 0 ; i < baza.get_afm_simplu().size() ; i++ )
+    for ( int i = 0 ; i < Baza_De_Date::get_instanta()->get_afm_simplu().size() ; i++ )
     {
-        cout<<++idx<<") "<<baza.get_afm_simplu()[i]->get_nume()<<'\n';
+        cout<<++idx<<") "<<Baza_De_Date::get_instanta()->get_afm_simplu()[i]->get_nume()<<'\n';
     }
-    for ( int i = 0 ; i < baza.get_afm_select().size() ; i++ )
+    for ( int i = 0 ; i < Baza_De_Date::get_instanta()->get_afm_select().size() ; i++ )
     {
-        cout<<++idx<<") "<<baza.get_afm_select()[i]->get_nume()<<'\n';
+        cout<<++idx<<") "<<Baza_De_Date::get_instanta()->get_afm_select()[i]->get_nume()<<'\n';
     }
     int optiune;
     cin>>optiune;
-    if ( optiune <= baza.get_afm_simplu().size() )
-        baza.get_afm_simplu()[optiune-1]->afisare_simplu(cout, true);
+    if ( optiune <= Baza_De_Date::get_instanta()->get_afm_simplu().size() )
+        Baza_De_Date::get_instanta()->get_afm_simplu()[optiune-1]->afisare_simplu(cout, true);
     else{
         cout<<"Alege ce tipuri de medicamente vrei?\n";
         string s;
         getline(cin, s);
-        baza.get_afm_select()[optiune-baza.get_afm_simplu().size()-1]->afisare_simplu(cout, s);
+        Baza_De_Date::get_instanta()->get_afm_select()[optiune-Baza_De_Date::get_instanta()->get_afm_simplu().size()-1]->afisare_simplu(cout, s);
     }
 }
 void Program::af_pacienti()
 {
     cout<<"Ce vrei afisat?\n";
     int idx = 0;
-    for ( int i = 0 ; i < baza.get_afp_simplu().size() ; i++ )
+    for ( int i = 0 ; i < Baza_De_Date::get_instanta()->get_afp_simplu().size() ; i++ )
     {
-        cout<<++idx<<") "<<baza.get_afp_simplu()[i]->get_nume()<<'\n';
+        cout<<++idx<<") "<<Baza_De_Date::get_instanta()->get_afp_simplu()[i]->get_nume()<<'\n';
     }
-    for ( int i = 0 ; i < baza.get_afp_select().size() ; i++ )
+    for ( int i = 0 ; i < Baza_De_Date::get_instanta()->get_afp_select().size() ; i++ )
     {
-        cout<<++idx<<") "<<baza.get_afp_select()[i]->get_nume()<<'\n';
+        cout<<++idx<<") "<<Baza_De_Date::get_instanta()->get_afp_select()[i]->get_nume()<<'\n';
     }
     int optiune;
     function<int(Pacient*)> faux = f_tip_date;
     vector<int> ord = {0, 1, 2};
     map<int, string> mp = {{0, "Adulti\nAdulti peste 40 de ani"}, {1, "Adulti sub 40 de ani"}, {2, "Copii"}};
     cin>>optiune;
-    if ( optiune <= baza.get_afp_simplu().size() ){
-        baza.get_afp_simplu()[optiune-1]->afisare_specific(cout, true, faux, ord, mp);
+    if ( optiune <= Baza_De_Date::get_instanta()->get_afp_simplu().size() ){
+        Baza_De_Date::get_instanta()->get_afp_simplu()[optiune-1]->afisare_specific(cout, true, faux, ord, mp);
     }
     else{
         cout<<"Alege ce tipuri de persoane vrei?\n";
         string s;
         cin.get();
         getline(cin, s);
-        baza.get_afp_select()[optiune-baza.get_afp_simplu().size()-1]->afisare_specific(cout, s, faux, ord, mp);
+        Baza_De_Date::get_instanta()->get_afp_select()[optiune-Baza_De_Date::get_instanta()->get_afp_simplu().size()-1]->afisare_specific(cout, s, faux, ord, mp);
     }
 }
 void Program::afisari()
@@ -374,7 +375,7 @@ void Program::run()
         string nume;
         out<<"Nume medicament: ";
         getline(in, nume);
-        Medicament* m = baza.get_medicament(nume);
+        Medicament* m = Baza_De_Date::get_instanta()->get_medicament(nume);
         if ( m != NULL )
         {
             f->adauga_medicament(m);

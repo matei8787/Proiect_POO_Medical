@@ -12,5 +12,6 @@
 #include <ctime>
 #include <cstdarg>
 #include <exception>
+#include <memory>
 using namespace std;
 

@@ -7,7 +7,8 @@ void Medicament::set_nume(string nume)
 }
 void Medicament::adauga_substanta(Substanta s)
 {
-    substante.push_back(&s);
+    shared_ptr<Substanta> aux =  make_shared<Substanta>(s);
+    substante.push_back(aux);
 }
 void Medicament::sterge_substanta(int i)
 {
@@ -31,7 +32,7 @@ string Medicament::get_nume()
 float Medicament::get_pret()
 {
     float ans = 0;
-    for ( Substanta* s : substante )
+    for ( shared_ptr<Substanta> s : substante )
     {
         ans += s -> get_pret();
     }
@@ -40,7 +41,7 @@ float Medicament::get_pret()
 float Medicament::get_intensitate_totala()
 {
     float ans = 0;
-    for( Substanta* s : substante )
+    for( shared_ptr<Substanta> s : substante )
     {
         ans += s -> calculeaza_intensitatea();
     }
@@ -48,14 +49,14 @@ float Medicament::get_intensitate_totala()
 }
 Substanta* Medicament::get_substanta(int i)
 {
-    return substante[i];
+    return substante[i].get();
 }
 Substanta* Medicament::get_substanta(string nume)
 {
-    for ( Substanta* s : substante )
+    for ( shared_ptr<Substanta> s : substante )
     {
         if ( s -> get_nume() == nume )
-            return s;
+            return s.get();
     }
     string msg = "Medicamentul nu are Substanta" + nume;
     throw Exceptie_Proprie(msg.c_str());
@@ -63,7 +64,7 @@ Substanta* Medicament::get_substanta(string nume)
 ostream& operator<<(ostream& out, const Medicament& m)
 {
     out<<m.nume<<":\n";
-    for ( Substanta* s : m.substante )
+    for ( shared_ptr<Substanta> s : m.substante )
     {
         s -> afiseaza(out);
         out<<'\n';
@@ -102,7 +103,8 @@ istream& operator>>(istream& in, Medicament& m)
             s = new Substanta();
             s -> citeste(in);
         }
-        m.substante.push_back(s);
+        shared_ptr<Substanta> aux = make_shared<Substanta>(s);
+        m.substante.push_back(aux);
     }
     return in;
 }
