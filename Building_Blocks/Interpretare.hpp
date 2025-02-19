@@ -3,7 +3,7 @@
 
 ///nivelurile T de restrictie pentru proprietatea U
 ///in mare, T e o multime de numere pentru care se va verifica
-///cu ajutorul unei functii reguli pentru proprietatea U
+///cu ajutorul unei functii regula pentru proprietatea U
 
 ///edit: acum cand dau design la baza de date,
 ///observ ca mai puteam abstractiza putin map-ul
